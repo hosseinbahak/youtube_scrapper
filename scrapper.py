@@ -30,8 +30,8 @@ def main():
 
     request = youtube.search().list(
         part="snippet",
-        maxResults=2,
-        q="english tips"
+        maxResults=1,
+        q="surfing"
     )
     response = request.execute()
 
