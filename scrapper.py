@@ -30,12 +30,13 @@ def main():
 
     request = youtube.search().list(
         part="snippet",
-        maxResults=1,
-        q="surfing"
+        maxResults=100,
+        ## we can put keyword here to search in videos and channels ##
+        q="netfilix"
     )
     response = request.execute()
 
-    print(response)
+    type(response)
 
 if __name__ == "__main__":
     main()
