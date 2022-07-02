@@ -1,14 +1,11 @@
-# -*- coding: utf-8 -*-
-
-# Sample Python code for youtube.search.list
-# See instructions for running these code samples locally:
 # https://developers.google.com/explorer-help/code-samples#python
-
 import os
-
+from typing import KeysView
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+import json
+
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
@@ -21,7 +18,6 @@ def main():
     api_version = "v3"
     client_secrets_file = "YOUR_CLIENT_SECRET_FILE.json"
 
-    # Get credentials and create an API client
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
         client_secrets_file, scopes)
     credentials = flow.run_console()
@@ -30,13 +26,34 @@ def main():
 
     request = youtube.search().list(
         part="snippet",
-        maxResults=100,
-        ## we can put keyword here to search in videos and channels ##
-        q="netfilix"
+        maxResults=2,
+        q="english language"
     )
-    response = request.execute()
+ 
+    r = request.execute()
+    r = json.dumps(r)
+    loaded_r = json.loads(r)
 
-    type(response)
+
+    channel_id = loaded_r['items'][0]['snippet']['channelId']
+    
+    request2 = youtube.channels().list(
+        part="statistics",
+        id = channel_id
+    )
+    
+
+    rs = request2.execute()
+    rs = json.dumps(rs)
+    loaded_r2 = json.loads(rs)
+    
+    channel_details = loaded_r2['items'][0]['statistics']
+
+    channel_details["channel_url"] = "https://www.youtube.com/channel/" + channel_id
+
+    print(channel_details)
+   
+    
 
 if __name__ == "__main__":
     main()
