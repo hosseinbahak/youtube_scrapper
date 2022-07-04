@@ -22,7 +22,7 @@ def main():
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials)
    
-    ## we can put keyword here to search it in youtube videos, channels and playlists ##
+    ## we can put keyword and count of results we need here to search it in youtube videos, channels and playlists ##
     serach_keyword = "language learning"
     count_of_results_times_50 = 2   #50*2
     results = []
