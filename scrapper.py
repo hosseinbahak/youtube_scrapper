@@ -1,18 +1,15 @@
-# https://developers.google.com/explorer-help/code-samples#python
 import os
 from typing import KeysView
+from unittest import result
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 import json
-import csv
-
+import xlsxwriter
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 def main():
-    # Disable OAuthlib's HTTPS verification when running locally.
-    # *DO NOT* leave this option enabled in production.
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
     api_service_name = "youtube"
@@ -27,86 +24,62 @@ def main():
    
     ## we can put keyword here to search it in youtube videos, channels and playlists ##
     serach_keyword = "language learning"
-    
-    request = youtube.search().list(
-        part="snippet",
-        ## results limitation ##
-        maxResults = 50,
-        q = serach_keyword
-    )
-    
-    nextPageToken = request.execute()['nextPageToken']
-    nextPage = youtube.search().list(
-        q = serach_keyword,
-        part='snippet',
-        maxResults=100,
-        pageToken=nextPageToken
-        ).execute()
-    
-    request.execute()['items'] += nextPage['items']
+    count_of_results_times_50 = 2   #50*2
+    results = []
 
-    print(nextPageToken)
+    #initializing xlsx file
+    file_name = "YouTubeScrapper_" + serach_keyword + ".xlsx"
+    workbook = xlsxwriter.Workbook(file_name)
+    worksheet = workbook.add_worksheet()
+    worksheet.write('A1', 'channelName')
+    worksheet.write('B1', 'subscriberCount')
+    worksheet.write('C1', 'viewCount')
+    worksheet.write('D1', 'channel_url')
+
+
+    ###we can return 50 result item per request cause of youtube limitations
+    for i in range(count_of_results_times_50):   
+        request = youtube.search().list(
+            part="snippet",
+            maxResults = 50,
+            q = serach_keyword
+        )
+
+        nextPageToken = request.execute()['nextPageToken']
+        results =  results + request.execute()['items'] 
+        
     
-    ###we can return 100 result item or all of youtube results (request per day got limited by google we have to limit requests)
-    """""
-    while (nextPageToken):
-        nextPage = youtube.search().list(
-        q = serach_keyword,
-        part='snippet',
-        maxResults=100,
-        pageToken=nextPageToken
-        ).execute()
-        request.execute()['items'] = request.execute()['items'] + nextPage['items']
 
-        if 'nextPageToken' not in nextPage:
-            request.pop('nextPageToken', None)
-        else:
-            nextPageToken = nextPage['nextPageToken']
-    """
-
-    r = request.execute()
-    r = json.dumps(r)
-    loaded_r = json.loads(r)
-
-    print(len(loaded_r['items']))
+    loaded_r = json.loads(json.dumps(results))
     
-    number_of_results = len(loaded_r['items'])
+    number_of_results = len(loaded_r)
     channels = []
-    
+
     for i in range(number_of_results):
-        channel_id = loaded_r['items'][i]['snippet']['channelId']
-        request2 = youtube.channels().list(
-            part="statistics",
+        channel_id = loaded_r[i]['snippet']['channelId']
+        request = youtube.channels().list(
+            part="snippet, statistics",
             id = channel_id
         )
         
-        rs = request2.execute()
-        rs = json.dumps(rs)
-        loaded_r2 = json.loads(rs)
-        channel_details = loaded_r2['items'][0]['statistics']
-
+        channelResult = request.execute()
+        channelResult = json.dumps(channelResult)
+        loaded_channel_detail = json.loads(channelResult)
+        
+        channel_detail = loaded_channel_detail['items'][0]['statistics']
+        channel_detail['channelName'] = loaded_channel_detail['items'][0]['snippet']['title']
         #add channel url to exist dictionary 
-        channel_details["channel_url"] = "https://www.youtube.com/channel/" + channel_id
-        channels.append(channel_details)
+        channel_detail["channel_url"] = "https://www.youtube.com/channel/" + channel_id
         
-    print(json.dumps(channels))
+        #worksheet.write(row, column, text) 
+        worksheet.write(i+1, 0, channel_detail['channelName'])
+        worksheet.write(i+1, 1, channel_detail['subscriberCount'])
+        worksheet.write(i+1, 2, channel_detail['viewCount'])
+        worksheet.write(i+1, 3, channel_detail['channel_url'])
+
+    workbook.close()    
+        
    
-
-    #Save results to csv#
-    file = "YouTubeScrapper_" + serach_keyword + ".csv"
-
-
-    def writeCSV(results, filename):
-        
-        keys = sorted(results.keys())
-        with open(filename, "w", newline="", encoding="utf-8") as output:
-            writer = csv.writer(output, delimiter=",")
-            writer.writerow(keys)
-
-
-    writeCSV(channels, file)
-    print("_-_-_CSV file has been created_-_-_" )
-
 
 if __name__ == "__main__":
     main()
