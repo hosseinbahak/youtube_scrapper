@@ -22,12 +22,13 @@ def main():
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials)
    
-    ## we can put keyword and count of results we need here to search it in youtube videos, channels and playlists ##
+    # we can put keyword and count of results we need here to search it
+    #  in youtube videos, channels and playlists ##
     serach_keyword = "language learning"
     count_of_results_times_50 = 4   #50*4
     results = []
     nextPageToken = ''
-    ###we can return 50 result item per request cause of youtube limitations
+    #we can return 50 result item per request cause of youtube limitations
     MAX_RESULT_PER_PAGE = 50
     channel_ids = set()
 
@@ -47,10 +48,11 @@ def main():
             q = serach_keyword,
             pageToken = nextPageToken
         )
-
-        nextPageToken = request.execute()['nextPageToken']
+        #request execution
+        res = request.execute()
         
-        results =  request.execute()['items'] 
+        nextPageToken = res['nextPageToken']
+        results =  res['items'] 
         loaded_r = json.loads(json.dumps(results))
         
         for i in range(len(loaded_r)):
